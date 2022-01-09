@@ -30,7 +30,7 @@ customers = int(interesting_rows[4][1])
 
 # print(interesting_rows)
 df = pd.read_csv(file_name, skiprows=10, index_col=0)
-df['Distance from depot'] = df.apply(lambda row : distance.euclidean(depot_position, (row["x"], row["y"])), axis=1)
+df['Distance from 0'] = df.apply(lambda row : distance.euclidean(depot_position, (row["x"], row["y"])), axis=1)
 df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
 # df.drop(['x', 'y'], axis=1, inplace=True)
 # min_service_time = df.sort_values(by=["Service Time"], inplace=True)
@@ -59,10 +59,12 @@ if max_nodes_to_visit < max_qapacity_to_load:
 remaining_time = max_duration - min_value * service_time_limit
 print(remaining_time)
 
-min_distance = df['Distance from depot'].min()
+min_distance = df['Distance from 0'].min()
+mean_distance = df['Distance from 0'].mean()
 
 # #but we have to go back to the depot
 remaining_time = remaining_time/2 - min_distance
+print("Remaining time")
 print(remaining_time)
 
 
@@ -75,16 +77,52 @@ print(max_profit)
 
 # df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
 # df.drop(['x', 'y'], axis=1, inplace=True)
-nodes = df[df['Distance from depot'] <= remaining_time].T.to_dict()
+fltered_df = df[df['Distance from 0'] <= remaining_time]
+print(fltered_df)
+fltered_df.loc[0] = [depot_position[0], depot_position[1], 0, 0, 0, 0, depot_position]
+for node in fltered_df.index:
+    if node != 0:
+        position = fltered_df.loc[node]["Position"]
+        fltered_df['Distance from ' + str(node)] = fltered_df.apply(lambda row : distance.euclidean(position, (row["x"], row["y"])), axis=1)
+# print(fltered_df)
+
+nodes = fltered_df.T.to_dict()
+print("Number of possible nodes")
+print(len(nodes))
 
 # print(nodes)
 # print(nodes[1]["Demand"])
 # for key in nodes.keys():
 #     print(key)
+# nodes[0] = {"Position": depot_position, "Demand" : 0, "Service Time": 0, "Distance from 0": 0}
+w1 = 1
+w2 = 1
+w3 = 1
+w4 = 2
+solution_found = False
 
+solution = [0]
+while not solution_found:
+    qualities = []
+    for node in nodes.keys():
+        if node not in solution:
+            print("Node = " + str(node))
+            # print(nodes.get(node))
+            q1 = w1 * (1-nodes.get(node)["Demand"] / fltered_df["Demand"].max())
+            q2 = w2 * (1-nodes.get(node)["Service Time"] / fltered_df["Service Time"].max())
+            q3 = w3 * (1-nodes.get(solution[-1])["Distance from " + str(node)] / fltered_df["Distance from " + str(node)].max())
+            q4 = w4 * (nodes.get(node)["Profit"] / fltered_df["Profit"].max())
+            quality = q1 + q2 + q3 + q4
+            qualities.append([node, quality])
+    qualities = sorted(qualities ,key=lambda x: x[1], reverse=True)
+    print(qualities)
+    paok
+
+
+paok
 combinations_df = pd.DataFrame(columns = ['Combination', 'Profit'])
 combinations_nodes = []
-for i in range(max_nodes_to_visit, 0, -1):
+for i in range(11, 10, -1):
     for combination in list(combinations(nodes.keys(), i)):
         capacity = sum(nodes.get(node)["Demand"] for node in combination)
         service_time = sum(nodes.get(node)["Service Time"] for node in combination)
@@ -93,7 +131,7 @@ for i in range(max_nodes_to_visit, 0, -1):
             combinations_nodes.append([combination, profit])
 
     
-combinations_nodes = sorted(combinations_nodes ,key=lambda x: x[1])
+combinations_nodes = sorted(combinations_nodes ,key=lambda x: x[1], reverse=True)
 print("Number of combinations")
 print(len(combinations_nodes))
 
@@ -102,11 +140,12 @@ nodes[0] = {"Position": depot_position}
 dinstances = {}
 found_solution = False
 for row in combinations_nodes:
-    print(row[0])
     if not found_solution:
+        print("Combination length")
+        print(len(row[0]))
         combination = row[0]
         perm = list(permutations(combination))
-        print(perm)
+        # print(perm)
         for permutation in perm:
             if not found_solution:
                 permutation_distances = sum(nodes.get(tuple_value)["Service Time"] for tuple_value in permutation)
