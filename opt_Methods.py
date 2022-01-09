@@ -4,7 +4,9 @@ from scipy.spatial import distance
 from itertools import combinations, permutations
 import numpy as np
 import math
+import time
 
+start_time = time.perf_counter()
 file_name = "Instance.csv"
 with open(file_name) as fd:
     reader = csv.reader(fd)
@@ -28,6 +30,9 @@ customers = int(interesting_rows[4][1])
 
 # print(interesting_rows)
 df = pd.read_csv(file_name, skiprows=10, index_col=0)
+df['Distance from depot'] = df.apply(lambda row : distance.euclidean(depot_position, (row["x"], row["y"])), axis=1)
+df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
+# df.drop(['x', 'y'], axis=1, inplace=True)
 # min_service_time = df.sort_values(by=["Service Time"], inplace=True)
 # print(df)
 
@@ -54,207 +59,71 @@ if max_nodes_to_visit < max_qapacity_to_load:
 remaining_time = max_duration - min_value * service_time_limit
 print(remaining_time)
 
-
+min_distance = df['Distance from depot'].min()
 
 # #but we have to go back to the depot
-remaining_time = remaining_time/2
+remaining_time = remaining_time/2 - min_distance
 print(remaining_time)
 
 
 max_profit = df["Profit"].max()
 print(max_profit)
 
-paok
+
+
+#For every track
 
 # df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
 # df.drop(['x', 'y'], axis=1, inplace=True)
-nodes = df.T.to_dict()
+nodes = df[df['Distance from depot'] <= remaining_time].T.to_dict()
 
 # print(nodes)
 # print(nodes[1]["Demand"])
 # for key in nodes.keys():
 #     print(key)
 
-
+combinations_df = pd.DataFrame(columns = ['Combination', 'Profit'])
 combinations_nodes = []
-for i in range(len(nodes), 0, -1):
-    comb = list(combinations(nodes.keys(), i))
-    combinations_nodes += comb
+for i in range(max_nodes_to_visit, 0, -1):
+    for combination in list(combinations(nodes.keys(), i)):
+        capacity = sum(nodes.get(node)["Demand"] for node in combination)
+        service_time = sum(nodes.get(node)["Service Time"] for node in combination)
+        if capacity <= max_capacity and service_time <= max_duration:
+            profit = sum(nodes.get(node)["Profit"] for node in combination)
+            combinations_nodes.append([combination, profit])
 
-    # cap = 0
-    # service_time = 0
-    # print(str(i) + "......")
-    # print(comb)
-
-# print(combinations_nodes)
-
-
-# print(len(combinations_nodes))
-
-print("Flag1")
-for tup in combinations_nodes.copy():
-    # print(tup)
-    cap = 0
-    service_time = 0
-    for element in tup:
-        # print(str(element) + ":::::")
-        # print(nodes[element]["Demand"])
-        cap += nodes[element]["Demand"]
-        # print(nodes[element]["Service Time"])
-        service_time += nodes[element]["Service Time"]
-        if cap > max_capacity or service_time > max_duration:
-            combinations_nodes.remove(tup)
-            break
-
-    # print(cap, service_time)
-    # if cap > max_capacity or service_time > max_duration:
-    #     combinations_nodes.remove(tup)
-
-# print(combinations_nodes)
-
-
-permutations_nodes = []
-print("Flag2")
-for tup in combinations_nodes:
-    perm = list(permutations(tup))
-    print(perm)
-    permutations_nodes += perm
-
-print("Flag3")
-print(permutations_nodes)
+    
+combinations_nodes = sorted(combinations_nodes ,key=lambda x: x[1])
+print("Number of combinations")
+print(len(combinations_nodes))
 
 nodes[0] = {"Position": depot_position}
-solutions = []
+# solutions = []
 dinstances = {}
+found_solution = False
+for row in combinations_nodes:
+    print(row[0])
+    if not found_solution:
+        combination = row[0]
+        perm = list(permutations(combination))
+        print(perm)
+        for permutation in perm:
+            if not found_solution:
+                permutation_distances = sum(nodes.get(tuple_value)["Service Time"] for tuple_value in permutation)
+                complete_permutation = (0,) + permutation + (0,)
+                for tuple_index in range(len(complete_permutation) - 1):
+                    dinstances_key = tuple(sorted(complete_permutation[tuple_index:(tuple_index + 2)]))
+                    # print(dinstances_key)
+                    dst = dinstances.get(dinstances_key)
+                    if dst == None:
+                        dinstances[dinstances_key] = dst = distance.euclidean(nodes.get(dinstances_key[0])["Position"], nodes.get(dinstances_key[1])["Position"])
+                    permutation_distances += dst
 
-for permutation in permutations_nodes:
-    permutation_distances = sum(nodes.get(tuple_value)["Service Time"] for tuple_value in permutation)
-    complete_permutation = (0,) + permutation + (0,)
-    for tuple_index in range(len(complete_permutation) - 1):
-        dinstances_key = tuple(sorted(complete_permutation[tuple_index:(tuple_index + 2)]))
-        # print(dinstances_key)
-        dst = dinstances.get(dinstances_key)
+                if permutation_distances <= max_duration:
+                    print("Solution found")
+                    print(row)
+                    found_solution = True
+                    # solutions.append([complete_permutation, sum(nodes.get(tuple_value)["Profit"] for tuple_value in permutation)])
 
-        if dst == None:
-            dinstances[dinstances_key] = dst = distance.euclidean(nodes.get(dinstances_key[0])["Position"],
-                                                                  nodes.get(dinstances_key[1])["Position"])
-        permutation_distances += dst
-
-    if permutation_distances <= max_duration:
-        solutions.append([complete_permutation, sum(nodes.get(tuple_value)["Profit"] for tuple_value in permutation)])
-
-print(dinstances)
-final_solutions = np.array(solutions)[np.argsort(np.array(solutions)[:, 1])]
-print(final_solutions)
-
-# print(max_duration)
-
-# paok
-
-time_limit_matrix = []
-# print(len(nodes))
-
-
-for node1 in range(len(nodes)):
-    for node2 in range(len(nodes)):
-        pass
-        # print(node)
-
-# a = (1, 3)
-
-# b = (4, 7)
-
-# dst = distance.euclidean(a, b)
-
-# print(dst)
-
-
-for tup in permutations_nodes:
-    service_time = 0
-
-# def get_demand_time():
-
-#     for tup in combinations_nodes:
-
-#         print(tup)
-
-#         cap = 0
-
-#         service_time = 0
-
-#         for element in tup:
-
-#             print(str(element) + ":::::")
-
-#             # print(nodes[element]["Demand"])
-
-#             cap += nodes[element]["Demand"]
-
-#             # print(nodes[element]["Service Time"])
-
-#             service_time += nodes[element]["Service Time"]
-
-#             # print(cap, service_time)
-
-#
-
-#
-
-# get_demand_time()
-
-
-# print(len(comb))
-
-# for lst in range(len(comb)):
-
-#     temp = list((int(j) for i in comb for j in i))
-
-#     print(len(temp))
-
-#     cap = 0
-
-#     service_time = 0
-
-#     for elements in range(len(temp)):
-
-#         print("------------------------")
-
-#         print(elements)
-
-#     print("------------------------")
-
-# print(nodes[elements]["Demand"])
-
-# cap += nodes[elements]["Demand"]
-
-# for lst in range(len(comb[i])):
-
-#     print(lst)
-
-
-# print(type(comb))
-
-# print(comb[3])
-
-
-# for lst in comb:
-
-#     # print(lst)
-
-#     # print(lst[2])
-
-#     cap = 0
-
-#     service_time = 0
-
-#     for i in range(len(lst)):
-
-#         pass
-
-# print(i)
-
-# cap += nodes[i]["Demand"]
-
-# print(nodes[1]["Demand"])
-
-# print(cap)
+end_time = time.perf_counter()
+print(end_time - start_time)
