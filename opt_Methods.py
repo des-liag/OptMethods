@@ -41,110 +41,119 @@ df['Distance from 0'] = df.apply(lambda row: distance.euclidean(depot_position, 
 # df.drop(['x', 'y'], axis=1, inplace=True)
 # min_service_time = df.sort_values(by=["Service Time"], inplace=True)
 # print(df)
+# print(df.index)
+# paok
+solutions = []
+for vehicles_index in range(vehicles):
+    if vehicles_index > 0:
+        df.drop(solutions[vehicles_index - 1][0][1:(len(solutions[vehicles_index - 1][0]) - 1)], inplace=True)
+        
+    #find the min service time of node so as to calculate how many nodes vehicles can visit
+    # service_time_limit = df["Service Time"].min()
+    service_time_limit = df["Service Time"].mean()
+    max_nodes_to_visit = math.ceil(max_duration/service_time_limit)
+    print(max_nodes_to_visit)
+    # print(type(max_nodes_to_visit))
+    # print(service_time_limit)
 
-#find the min service time of node so as to calculate how many nodes vehicles can visit
-# service_time_limit = df["Service Time"].min()
-service_time_limit = df["Service Time"].mean()
-max_nodes_to_visit = math.ceil(max_duration/service_time_limit)
-print(max_nodes_to_visit)
-# print(type(max_nodes_to_visit))
-# print(service_time_limit)
+    # qapacity_limit = df["Demand"].min()
+    qapacity_limit = df["Demand"].mean()
+    # print(qapacity_limit)
+    max_qapacity_to_load = math.ceil(max_capacity/qapacity_limit)
+    print(max_qapacity_to_load)
 
-# qapacity_limit = df["Demand"].min()
-qapacity_limit = df["Demand"].mean()
-# print(qapacity_limit)
-max_qapacity_to_load = math.ceil(max_capacity/qapacity_limit)
-print(max_qapacity_to_load)
+    #nodes that vehicles can visit can be under the number of the min(max_nodes_to_visit, max_qapacity_to_load)
+    min_value = max_qapacity_to_load
+    if max_nodes_to_visit < max_qapacity_to_load:
+        min_value = max_nodes_to_visit
+    # remaining_time = max_duration - [(max_nodes_to_visit)*(service_time_limit)]
+    # remaining_time = max_duration - (max_qapacity_to_load)*(service_time_limit)
+    remaining_time = max_duration - min_value * service_time_limit
+    print(remaining_time)
 
-#nodes that vehicles can visit can be under the number of the min(max_nodes_to_visit, max_qapacity_to_load)
-min_value = max_qapacity_to_load
-if max_nodes_to_visit < max_qapacity_to_load:
-    min_value = max_nodes_to_visit
-# remaining_time = max_duration - [(max_nodes_to_visit)*(service_time_limit)]
-# remaining_time = max_duration - (max_qapacity_to_load)*(service_time_limit)
-remaining_time = max_duration - min_value * service_time_limit
-print(remaining_time)
+    min_distance = df['Distance from 0'].min()
+    mean_distance = df['Distance from 0'].mean()
 
-min_distance = df['Distance from 0'].min()
-mean_distance = df['Distance from 0'].mean()
-
-# #but we have to go back to the depot
-# remaining_time = remaining_time/2 - min_distance
-print("Remaining time")
-print(remaining_time)
+    # #but we have to go back to the depot
+    # remaining_time = remaining_time/2 - min_distance
+    print("Remaining time")
+    print(remaining_time)
 
 
-max_profit = df["Profit"].max()
-print(max_profit)
+    max_profit = df["Profit"].max()
+    print(max_profit)
 
 
 
-#For every track
 
-# remaining_time = 100000
-# df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
-# df.drop(['x', 'y'], axis=1, inplace=True)
-fltered_df = df[df['Distance from 0'] <= remaining_time]
-print(fltered_df)
-fltered_df.loc[0] = [depot_position[0], depot_position[1], 0, 0, 0, depot_position, 0]
-for node in fltered_df.index:
-    if node != 0:
-        position = fltered_df.loc[node]["Position"]
-        fltered_df['Distance from ' + str(node)] = fltered_df.apply(lambda row : distance.euclidean(position, (row["x"], row["y"])), axis=1)
-print(fltered_df)
+    # remaining_time = 100000
+    # df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
+    # df.drop(['x', 'y'], axis=1, inplace=True)
+    fltered_df = df[df['Distance from 0'] <= remaining_time]
+    print(fltered_df)
+    fltered_df.loc[0] = [depot_position[0], depot_position[1], 0, 0, 0, depot_position, 0]
+    for node in fltered_df.index:
+        if node != 0:
+            position = fltered_df.loc[node]["Position"]
+            fltered_df['Distance from ' + str(node)] = fltered_df.apply(lambda row : distance.euclidean(position, (row["x"], row["y"])), axis=1)
+    print(fltered_df)
 
-nodes = fltered_df.T.to_dict()
-print("Number of possible nodes")
-print(len(nodes))
+    nodes = fltered_df.T.to_dict()
+    print("Number of possible nodes")
+    print(len(nodes))
 
-# print(nodes)
-# print(nodes[1]["Demand"])
-# for key in nodes.keys():
-#     print(key)
-# nodes[0] = {"Position": depot_position, "Demand" : 0, "Service Time": 0, "Distance from 0": 0}
-w1 = 1
-w2 = 0.5
-w3 = 0.5
-w4 = 2
-solution_found = False
-solution = [0]
-solution_profit = 0
-remaining_time = max_duration
-remainig_capacity = max_capacity 
-while not solution_found:
-    qualities = []
-    for node in nodes.keys():
-        if node not in solution:
-            # print("Node = " + str(node))
-            # print(nodes.get(node))
-            q1 = w1 * (1-nodes.get(node)["Demand"] / fltered_df["Demand"].max())
-            q2 = w2 * (1-nodes.get(node)["Service Time"] / fltered_df["Service Time"].max())
-            columns = ["Distance from " + str(x)  for x in nodes.keys()]
-            q3 = w3 * (1-nodes.get(solution[-1])["Distance from " + str(node)] / fltered_df.loc[solution[-1]][columns].max())
-            q4 = w4 * (nodes.get(node)["Profit"] / fltered_df["Profit"].max())
-            quality = q1 + q2 + q3 + q4
-            qualities.append([node, quality])
-    qualities = sorted(qualities ,key=lambda x: x[1], reverse=True)
-    local_solution_found = False
-    for quality in qualities:
-        if not local_solution_found:
-            node = quality[0]
-            if remaining_time - nodes.get(node)["Service Time"] - nodes.get(solution[-1])["Distance from " + str(node)] - nodes.get(node)["Distance from 0"] > 0 and remainig_capacity - nodes.get(node)["Demand"] > 0:
-                remaining_time = remaining_time - nodes.get(node)["Service Time"] - nodes.get(solution[-1])["Distance from " + str(node)]
-                remainig_capacity = remainig_capacity - nodes.get(node)["Demand"]
-                solution.append(node)
-                solution_profit = solution_profit + nodes.get(node)["Profit"]
-                local_solution_found = True
-    if local_solution_found == False:
-        solution_found = True
-        solution.append(0)
+    # print(nodes)
+    # print(nodes[1]["Demand"])
+    # for key in nodes.keys():
+    #     print(key)
+    # nodes[0] = {"Position": depot_position, "Demand" : 0, "Service Time": 0, "Distance from 0": 0}
+    w1 = 1
+    w2 = 0.5
+    w3 = 10
+    w4 = 5
+    solution_found = False
+    solution = [0]
+    solution_profit = 0
+    remaining_time = max_duration
+    remainig_capacity = max_capacity 
+    while not solution_found:
+        qualities = []
+        for node in nodes.keys():
+            if node not in solution:
+                # print("Node = " + str(node))
+                # print(nodes.get(node))
+                q1 = w1 * (1-nodes.get(node)["Demand"] / fltered_df["Demand"].max())
+                q2 = w2 * (1-nodes.get(node)["Service Time"] / fltered_df["Service Time"].max())
+                columns = ["Distance from " + str(x)  for x in nodes.keys()]
+                q3 = w3 * (1-nodes.get(solution[-1])["Distance from " + str(node)] / fltered_df.loc[solution[-1]][columns].max())
+                q4 = w4 * (nodes.get(node)["Profit"] / fltered_df["Profit"].max())
+                quality = q1 + q2 + q3 + q4
+                qualities.append([node, quality])
+        qualities = sorted(qualities ,key=lambda x: x[1], reverse=True)
+        local_solution_found = False
+        for quality in qualities:
+            if not local_solution_found:
+                node = quality[0]
+                if remaining_time - nodes.get(node)["Service Time"] - nodes.get(solution[-1])["Distance from " + str(node)] - nodes.get(node)["Distance from 0"] > 0 and remainig_capacity - nodes.get(node)["Demand"] > 0:
+                    remaining_time = remaining_time - nodes.get(node)["Service Time"] - nodes.get(solution[-1])["Distance from " + str(node)]
+                    remainig_capacity = remainig_capacity - nodes.get(node)["Demand"]
+                    solution.append(node)
+                    solution_profit = solution_profit + nodes.get(node)["Profit"]
+                    local_solution_found = True
+        if local_solution_found == False:
+            solution_found = True
+            solution.append(0)
+    solutions.append([solution, solution_profit])
+    print("----------Solution------------")
+    print("Combination = " + str(solution))
+    print("Total Profit = " + str(solution_profit))
+    print("------------------------------")
+
+
     # print(qualities)
-print("----------Solution------------")
-print("Combination = " + str(solution))
-print("Total Profit = " + str(solution_profit))
-print("------------------------------")
+print("Total profit = " + str(sum(x[1] for x in solutions)))
 end_time = time.perf_counter()
-print(end_time - start_time)
+print("Execution time = " + str(end_time - start_time) + " seconds")
 
 
 #Old approach
