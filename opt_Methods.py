@@ -69,7 +69,7 @@ min_distance = df['Distance from 0'].min()
 mean_distance = df['Distance from 0'].mean()
 
 # #but we have to go back to the depot
-remaining_time = remaining_time/2 - min_distance
+# remaining_time = remaining_time/2 - min_distance
 print("Remaining time")
 print(remaining_time)
 
@@ -81,7 +81,7 @@ print(max_profit)
 
 #For every track
 
-remaining_time = 100000
+# remaining_time = 100000
 # df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
 # df.drop(['x', 'y'], axis=1, inplace=True)
 fltered_df = df[df['Distance from 0'] <= remaining_time]
