@@ -18,6 +18,8 @@ fd.close()
 vehicles = int(interesting_rows[0][1])
 max_capacity = int(interesting_rows[1][1])
 max_duration = int(interesting_rows[2][1])
+# max_capacity = 100000
+# max_duration = 100000
 depot_position = (float(interesting_rows[3][1]), float(interesting_rows[3][2]))
 # print(depot)
 customers = int(interesting_rows[4][1])
@@ -31,7 +33,10 @@ customers = int(interesting_rows[4][1])
 # print(interesting_rows)
 df = pd.read_csv(file_name, skiprows=10, index_col=0)
 df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
-df['Distance from 0'] = df.apply(lambda row : distance.euclidean(depot_position, (row["x"], row["y"])), axis=1)
+df['Distance from 0'] = df.apply(lambda row: distance.euclidean(depot_position, (row["x"], row["y"])), axis=1)
+
+# print(df)
+# paok
 
 # df.drop(['x', 'y'], axis=1, inplace=True)
 # min_service_time = df.sort_values(by=["Service Time"], inplace=True)
@@ -76,6 +81,7 @@ print(max_profit)
 
 #For every track
 
+remaining_time = 100000
 # df['Position'] = df.apply(lambda row: (row["x"], row["y"]), axis=1)
 # df.drop(['x', 'y'], axis=1, inplace=True)
 fltered_df = df[df['Distance from 0'] <= remaining_time]
@@ -97,9 +103,9 @@ print(len(nodes))
 #     print(key)
 # nodes[0] = {"Position": depot_position, "Demand" : 0, "Service Time": 0, "Distance from 0": 0}
 w1 = 1
-w2 = 1
-w3 = 1
-w4 = 3
+w2 = 0.5
+w3 = 0.5
+w4 = 2
 solution_found = False
 solution = [0]
 solution_profit = 0
