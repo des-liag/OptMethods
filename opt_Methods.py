@@ -111,6 +111,7 @@ for vehicles_index in range(vehicles):
                     local_solution_found = True
         if local_solution_found == False:
             solution_found = True
+            remaining_time = remaining_time - nodes.get(solution[-1])["Distance from 0"]
             solution.append(0)
 
     solutions.append([solution, solution_profit])
