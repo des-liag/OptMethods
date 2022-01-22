@@ -67,7 +67,7 @@ for vehicles_index in range(vehicles):
     # print(filtered_df)
 
     nodes = filtered_df.T.to_dict()
-    print("Number of possible nodes: " + str(len(nodes)))
+    # print("Number of possible nodes: " + str(len(nodes)))
 
     demand_weight = 2
     service_time_weight = 1.5
@@ -101,8 +101,8 @@ for vehicles_index in range(vehicles):
             if not local_solution_found:
                 node = quality[0]
                 if remaining_time - nodes.get(node)["Service Time"] - nodes.get(solution[-1])[
-                    "Distance from " + str(node)] - nodes.get(node)["Distance from 0"] > 0 and remaining_capacity - \
-                        nodes.get(node)["Demand"] > 0:
+                    "Distance from " + str(node)] - nodes.get(node)["Distance from 0"] >= 0 and remaining_capacity - \
+                        nodes.get(node)["Demand"] >= 0:
                     remaining_time = remaining_time - nodes.get(node)["Service Time"] - nodes.get(solution[-1])[
                         "Distance from " + str(node)]
                     remaining_capacity = remaining_capacity - nodes.get(node)["Demand"]
